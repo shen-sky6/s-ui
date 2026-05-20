@@ -1,22 +1,18 @@
 package util
 
 import (
-	"crypto/tls"
 	"encoding/json"
 	"io"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/alireza0/s-ui/logger"
 	"github.com/alireza0/s-ui/util/common"
 )
 
 func GetExternalLink(url string) string {
-	tr := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-	}
-
-	client := &http.Client{Transport: tr}
+	client := &http.Client{Timeout: 30 * time.Second}
 
 	response, err := client.Get(url)
 	if err != nil {
