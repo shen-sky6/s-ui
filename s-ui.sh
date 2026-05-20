@@ -4,6 +4,9 @@ red='\033[0;31m'
 green='\033[0;32m'
 yellow='\033[0;33m'
 plain='\033[0m'
+SUI_REPO="${SUI_REPO:-shen-sky6/s-ui}"
+SUI_INSTALL_REF="${SUI_INSTALL_REF:-shen/release-v1.4.3}"
+SUI_RAW_BASE="https://raw.githubusercontent.com/${SUI_REPO}/refs/heads/${SUI_INSTALL_REF}"
 
 function LOGD() {
     echo -e "${yellow}[DEG] $* ${plain}"
@@ -63,7 +66,7 @@ before_show_menu() {
 }
 
 install() {
-    bash <(curl -Ls https://raw.githubusercontent.com/alireza0/s-ui/main/install.sh)
+    bash <(curl -Ls "${SUI_RAW_BASE}/install.sh")
     if [[ $? == 0 ]]; then
         if [[ $# == 0 ]]; then
             start
@@ -82,7 +85,7 @@ update() {
         fi
         return 0
     fi
-    bash <(curl -Ls https://raw.githubusercontent.com/alireza0/s-ui/main/install.sh)
+    bash <(curl -Ls "${SUI_RAW_BASE}/install.sh")
     if [[ $? == 0 ]]; then
         LOGI "Update is complete, Panel has automatically restarted "
         exit 0
@@ -98,7 +101,7 @@ custom_version() {
     exit 1
     fi
 
-    download_link="https://raw.githubusercontent.com/alireza0/s-ui/master/install.sh"
+    download_link="${SUI_RAW_BASE}/install.sh"
 
     install_command="bash <(curl -Ls $download_link) $panel_version"
 
@@ -295,7 +298,7 @@ show_log() {
 }
 
 update_shell() {
-    wget -O /usr/bin/s-ui -N --no-check-certificate https://github.com/alireza0/s-ui/raw/main/s-ui.sh
+    wget -O /usr/bin/s-ui -N --no-check-certificate "${SUI_RAW_BASE}/s-ui.sh"
     if [[ $? != 0 ]]; then
         echo ""
         LOGE "Failed to download script, Please check whether the machine can connect Github"
