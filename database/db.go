@@ -9,7 +9,6 @@ import (
 
 	"github.com/alireza0/s-ui/config"
 	"github.com/alireza0/s-ui/database/model"
-	"github.com/alireza0/s-ui/util/common"
 
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -25,13 +24,9 @@ func initUser() error {
 		return err
 	}
 	if count == 0 {
-		password, err := common.HashPassword("admin")
-		if err != nil {
-			return err
-		}
 		user := &model.User{
 			Username: "admin",
-			Password: password,
+			Password: "admin",
 		}
 		return db.Create(user).Error
 	}
