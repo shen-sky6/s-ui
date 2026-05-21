@@ -32,22 +32,18 @@ func (s *UserService) UpdateFirstUser(username string, password string) error {
 	} else if password == "" {
 		return common.NewError("password can not be empty")
 	}
-	hashedPassword, err := common.HashPassword(password)
-	if err != nil {
-		return err
-	}
 	db := database.GetDB()
 	user := &model.User{}
-	err = db.Model(model.User{}).First(user).Error
+	err := db.Model(model.User{}).First(user).Error
 	if database.IsNotFound(err) {
 		user.Username = username
-		user.Password = hashedPassword
+		user.Password = password
 		return db.Model(model.User{}).Create(user).Error
 	} else if err != nil {
 		return err
 	}
 	user.Username = username
-	user.Password = hashedPassword
+	user.Password = password
 	return db.Save(user).Error
 }
 
@@ -62,43 +58,26 @@ func (s *UserService) Login(username string, password string, remoteIP string) (
 func (s *UserService) CheckUser(username string, password string, remoteIP string) *model.User {
 	db := database.GetDB()
 
-	users := make([]model.User, 0)
+	user := &model.User{}
 	err := db.Model(model.User{}).
-		Where("username = ?", username).
-		Find(&users).
+		Where("username = ? and password = ?", username, password).
+		First(user).
 		Error
-	if err != nil {
+	if database.IsNotFound(err) {
+		return nil
+	} else if err != nil {
 		logger.Warning("check user err:", err, " IP: ", remoteIP)
 		return nil
 	}
-	for i := range users {
-		user := &users[i]
-		if !common.CheckPassword(user.Password, password) {
-			continue
-		}
-		if !common.IsHashedPassword(user.Password) {
-			hashedPassword, err := common.HashPassword(password)
-			if err != nil {
-				logger.Warning("unable to migrate password hash", err)
-				return user
-			}
-			err = db.Model(model.User{}).
-				Where("id = ?", user.Id).
-				Update("password", hashedPassword).Error
-			if err != nil {
-				logger.Warning("unable to save migrated password hash", err)
-			}
-		}
-		lastLoginTxt := time.Now().Format("2006-01-02 15:04:05") + " " + remoteIP
-		err = db.Model(model.User{}).
-			Where("id = ?", user.Id).
-			Update("last_logins", &lastLoginTxt).Error
-		if err != nil {
-			logger.Warning("unable to log login data", err)
-		}
-		return user
+
+	lastLoginTxt := time.Now().Format("2006-01-02 15:04:05") + " " + remoteIP
+	err = db.Model(model.User{}).
+		Where("username = ?", username).
+		Update("last_logins", &lastLoginTxt).Error
+	if err != nil {
+		logger.Warning("unable to log login data", err)
 	}
-	return nil
+	return user
 }
 
 func (s *UserService) GetUsers() (*[]model.User, error) {
@@ -114,19 +93,12 @@ func (s *UserService) GetUsers() (*[]model.User, error) {
 func (s *UserService) ChangePass(id string, oldPass string, newUser string, newPass string) error {
 	db := database.GetDB()
 	user := &model.User{}
-	err := db.Model(model.User{}).Where("id = ?", id).First(user).Error
+	err := db.Model(model.User{}).Where("id = ? AND password = ?", id, oldPass).First(user).Error
 	if err != nil || database.IsNotFound(err) {
 		return err
 	}
-	if !common.CheckPassword(user.Password, oldPass) {
-		return common.NewError("wrong old password")
-	}
-	hashedPassword, err := common.HashPassword(newPass)
-	if err != nil {
-		return err
-	}
 	user.Username = newUser
-	user.Password = hashedPassword
+	user.Password = newPass
 	return db.Save(user).Error
 }
 
